@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Product Browser</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0f1117;
+    --surface: #1a1d27;
+    --border: #2a2d3a;
+    --accent: #6c63ff;
+    --accent-dim: #6c63ff22;
+    --text: #e8e9f0;
+    --muted: #7b7e96;
+    --green: #3ecf8e;
+    --radius: 10px;
+    --font: 'Inter', system-ui, sans-serif;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font);
+    min-height: 100vh;
+  }
+
+  header {
+    padding: 24px 32px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  header h1 {
+    font-size: 1.2rem;
+    font-weight: 600;
+    letter-spacing: -.02em;
+  }
+  header span {
+    font-size: .8rem;
+    background: var(--accent-dim);
+    color: var(--accent);
+    padding: 2px 8px;
+    border-radius: 999px;
+    border: 1px solid var(--accent);
+  }
+
+  .controls {
+    display: flex;
+    gap: 12px;
+    padding: 20px 32px;
+    flex-wrap: wrap;
+    align-items: center;
+    border-bottom: 1px solid var(--border);
+  }
+
+  select {
+    background: var(--surface);
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 8px 14px;
+    font-size: .875rem;
+    cursor: pointer;
+    outline: none;
+    transition: border-color .15s;
+  }
+  select:hover, select:focus { border-color: var(--accent); }
+
+  .count {
+    margin-left: auto;
+    font-size: .8rem;
+    color: var(--muted);
+  }
+
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 16px;
+    padding: 24px 32px;
+  }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    transition: border-color .15s, transform .15s;
+  }
+  .card:hover {
+    border-color: var(--accent);
+    transform: translateY(-2px);
+  }
+
+  .card-cat {
+    font-size: .7rem;
+    text-transform: uppercase;
+    letter-spacing: .08em;
+    color: var(--accent);
+    font-weight: 600;
+  }
+
+  .card-name {
+    font-size: .95rem;
+    font-weight: 500;
+    line-height: 1.4;
+  }
+
+  .card-price {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--green);
+    margin-top: auto;
+  }
+
+  .card-date {
+    font-size: .72rem;
+    color: var(--muted);
+  }
+
+  .footer {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 16px;
+    padding: 24px 32px 48px;
+  }
+
+  button {
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    padding: 10px 24px;
+    border-radius: var(--radius);
+    font-size: .875rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: opacity .15s;
+  }
+  button:hover { opacity: .85; }
+  button:disabled { opacity: .35; cursor: not-allowed; }
+
+  .btn-ghost {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--text);
+  }
+
+  .spinner {
+    width: 20px; height: 20px;
+    border: 2px solid var(--border);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin .6s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .empty {
+    grid-column: 1/-1;
+    text-align: center;
+    color: var(--muted);
+    padding: 60px 0;
+    font-size: .95rem;
+  }
+
+  @media (max-width: 600px) {
+    .controls, .grid, .footer { padding-left: 16px; padding-right: 16px; }
+    header { padding: 16px; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Product Browser</h1>
+  <span id="total-badge">200k products</span>
+</header>
+
+<div class="controls">
+  <select id="cat-select">
+    <option value="">All categories</option>
+  </select>
+  <select id="limit-select">
+    <option value="20">20 per page</option>
+    <option value="10">10 per page</option>
+    <option value="50">50 per page</option>
+  </select>
+  <span class="count" id="page-info"></span>
+</div>
+
+<div class="grid" id="grid">
+  <div class="empty"><div class="spinner" style="margin:0 auto"></div></div>
+</div>
+
+<div class="footer">
+  <button class="btn-ghost" id="btn-prev" disabled>← Prev</button>
+  <span id="page-num" style="font-size:.85rem;color:var(--muted)">Page 1</span>
+  <button id="btn-next" disabled>Next →</button>
+</div>
+
+<script>
+  const grid       = document.getElementById('grid');
+  const catSelect  = document.getElementById('cat-select');
+  const limitSel   = document.getElementById('limit-select');
+  const btnNext    = document.getElementById('btn-next');
+  const btnPrev    = document.getElementById('btn-prev');
+  const pageInfo   = document.getElementById('page-info');
+  const pageNum    = document.getElementById('page-num');
+
+  // Cursor stack — entry [0] is always null (first page).
+  // Pushing the nextCursor lets us go forward; popping lets us go back.
+  let cursors  = [null];
+  let page     = 1;
+  let loading  = false;
+
+  async function fetchProducts(cursor) {
+    const category = catSelect.value;
+    const limit    = limitSel.value;
+    const params   = new URLSearchParams({ limit });
+    if (category) params.set('category', category);
+    if (cursor)   params.set('cursor', cursor);
+
+    const res  = await fetch(`/api/products?${params}`);
+    return res.json();
+  }
+
+  function renderCards(items) {
+    if (!items.length) {
+      grid.innerHTML = '<div class="empty">No products found.</div>';
+      return;
+    }
+    grid.innerHTML = items.map(p => `
+      <div class="card">
+        <div class="card-cat">${p.category}</div>
+        <div class="card-name">${p.name}</div>
+        <div class="card-price">$${Number(p.price).toFixed(2)}</div>
+        <div class="card-date">${new Date(p.created_at).toLocaleDateString('en-US', { year:'numeric', month:'short', day:'numeric' })}</div>
+      </div>
+    `).join('');
+  }
+
+  async function loadPage(cursorIndex) {
+    if (loading) return;
+    loading = true;
+    grid.innerHTML = '<div class="empty"><div class="spinner" style="margin:0 auto"></div></div>';
+    btnNext.disabled = true;
+    btnPrev.disabled = true;
+
+    try {
+      const cursor = cursors[cursorIndex];
+      const data   = await fetchProducts(cursor);
+
+      renderCards(data.data || []);
+
+      // Store next cursor at cursorIndex+1 (overwrite if navigating forward fresh)
+      cursors[cursorIndex + 1] = data.pagination?.nextCursor || null;
+
+      page = cursorIndex + 1;
+      pageNum.textContent = `Page ${page}`;
+      pageInfo.textContent = `${data.data?.length ?? 0} items`;
+
+      btnPrev.disabled = page === 1;
+      btnNext.disabled = !data.pagination?.hasMore;
+    } catch (e) {
+      grid.innerHTML = '<div class="empty">Failed to load products. Is the server running?</div>';
+    }
+
+    loading = false;
+  }
+
+  async function loadCategories() {
+    try {
+      const res  = await fetch('/api/products/categories');
+      const data = await res.json();
+      (data.categories || []).forEach(cat => {
+        const opt = document.createElement('option');
+        opt.value = cat; opt.textContent = cat;
+        catSelect.appendChild(opt);
+      });
+    } catch {}
+  }
+
+  // Reset to page 1 when filters change
+  function reset() {
+    cursors = [null];
+    page    = 1;
+    loadPage(0);
+  }
+
+  btnNext.addEventListener('click', () => loadPage(page));      // page is 1-indexed, cursors is 0-indexed; cursors[page] = next
+  btnPrev.addEventListener('click', () => loadPage(page - 2));  // go back one cursor
+  catSelect.addEventListener('change', reset);
+  limitSel.addEventListener('change', reset);
+
+  // Boot
+  loadCategories();
+  loadPage(0);
+</script>
+</body>
+</html>
