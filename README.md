@@ -1,4 +1,4 @@
-# CodeVector Product Browser
+# ProductFlow API
 
 A backend that lets you browse ~200,000 products (newest first), filter by category, and paginate — without ever skipping or duplicating a product even as data changes.
 
