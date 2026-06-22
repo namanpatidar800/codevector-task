@@ -1,5 +1,5 @@
 {
-  "name": "codevector-product-browser",
+  "name": "ProductFlow-API",
   "version": "1.0.0",
   "description": "Product browser with cursor-based pagination",
   "main": "src/index.js",
