@@ -22,6 +22,19 @@ const DEFAULT_LIMIT = 20;
  *   New inserts at the top of the list never affect pages the user has
  *   already passed, and rows are never duplicated or skipped.
  */
+
+router.get('/categories', async (_req, res) => {
+  try {
+    const { rows } = await pool.query(
+      'SELECT DISTINCT category FROM products ORDER BY category ASC'
+    );
+    res.json({ categories: rows.map(r => r.category) });
+  } catch (err) {
+    console.error('GET /products/categories error:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 router.get('/', async (req, res) => {
   try {
     const limit = VALID_LIMITS.includes(Number(req.query.limit))
@@ -94,16 +107,5 @@ router.get('/', async (req, res) => {
  * GET /api/products/categories
  * Returns all distinct category names — useful for populating a filter dropdown.
  */
-router.get('/categories', async (_req, res) => {
-  try {
-    const { rows } = await pool.query(
-      'SELECT DISTINCT category FROM products ORDER BY category ASC'
-    );
-    res.json({ categories: rows.map(r => r.category) });
-  } catch (err) {
-    console.error('GET /products/categories error:', err);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
 
 module.exports = router;
